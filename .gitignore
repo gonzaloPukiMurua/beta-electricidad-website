@@ -1,0 +1,23 @@
+# ─────────────────────────────────────────────────────────────
+# .gitignore de la raíz del repo (los scripts ETL viven acá).
+# El proyecto Next.js tiene su propio .gitignore en beta-electricidad-full-app/
+# ─────────────────────────────────────────────────────────────
+
+# Credenciales de Supabase para los scripts Python locales — NUNCA commitear
+/.env
+/.env.*
+
+# Snapshots y exportaciones del ERP (los genera el ETL, no van al repo)
+/catalogo_inicial.xlsx
+/catalogo_*.xlsx
+/cambios_*.xlsx
+/historial/
+
+# Artefactos locales / empaquetados
+/project.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

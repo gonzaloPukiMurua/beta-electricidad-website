@@ -80,8 +80,9 @@ MAPEO_COLUMNAS = {
     "Precio venta":  "precio_venta",
     "Costo":         "costo",
     "Stock":         "stock",
-    "Publicado web": "publicado_web",
-    "En oferta":     "en_oferta",
+    # "Publicado web" y "En oferta" NO se sincronizan: la curaduría vive en la
+    # tabla `catalogo_web` y la decide el negocio desde el admin (REQ-013, D-004).
+    # Antes se pisaban con el valor del ERP (ARPUB) en cada artículo modificado.
     # Las listas de precio se mapean dinámicamente más abajo
 }
 
@@ -177,11 +178,7 @@ def fila_a_registro(fila: dict, columnas: list[str]) -> dict:
         if isinstance(valor, float) and valor != valor:   # NaN
             valor = None
         if col in MAPEO_COLUMNAS:
-            clave = MAPEO_COLUMNAS[col]
-            # Booleanos desde texto
-            if clave in ("publicado_web", "en_oferta"):
-                valor = valor == "Sí"
-            registro[clave] = valor
+            registro[MAPEO_COLUMNAS[col]] = valor
         elif col.startswith("Lista:"):
             registro[limpiar_nombre_lista(col)] = valor
         # Ignorar columna "Cambios" si existe
@@ -272,6 +269,8 @@ def sincronizar(client: SupabaseClient, upserts: list[dict], desactivar: list, d
 
 DDL_TABLA = """
 
+-- Referencia histórica de la tabla `productos`. El esquema vigente (RLS,
+-- catalogo_web, vista catalogo_publico) está en supabase/migrations/.
 -- Ejecutar UNA SOLA VEZ en el SQL Editor de Supabase:
 
 CREATE TABLE IF NOT EXISTS productos (

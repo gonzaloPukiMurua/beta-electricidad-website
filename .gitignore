@@ -21,3 +21,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Curaduría y spikes: contienen ventas y datos de clientes del ERP. Este repo es público.
+/curaduria/
+/spikes/

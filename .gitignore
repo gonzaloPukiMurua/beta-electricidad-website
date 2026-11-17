@@ -13,6 +13,7 @@
 /cambios_*.xlsx
 /historial/
 /logs/
+/respaldos/
 
 # Artefactos locales / empaquetados
 /project.zip

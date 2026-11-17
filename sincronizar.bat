@@ -102,6 +102,14 @@ if errorlevel 1 (
 
 move /y "%PENDIENTE%" "%NUEVO%" >nul
 
+:: Respaldo semanal de Supabase (solo si el ultimo tiene 7 dias o mas).
+:: Si falla, la sincronizacion ya quedo hecha; se informa como error para
+:: que se vea en el log y se reintenta en la proxima corrida.
+echo.
+echo [extra] Respaldo semanal de Supabase...
+"%PYTHON%" "%SCRIPTS%respaldar_supabase.py" --si-pasaron-dias 7
+set "ERROR_RESPALDO=%errorlevel%"
+
 :: Limpieza: archivos viejos (forfiles da error si no hay nada que borrar)
 forfiles /p "%HISTORIAL%" /m catalogo_*.xlsx /d -%DIAS_HISTORIAL% /c "cmd /c del @path" >nul 2>&1
 forfiles /p "%HISTORIAL%" /m pendiente_*.xlsx /d -2 /c "cmd /c del @path" >nul 2>&1
@@ -110,4 +118,8 @@ forfiles /p "%LOGS%" /m sync_*.log /d -%DIAS_LOGS% /c "cmd /c del @path" >nul 2>
 
 echo.
 echo === Sincronizacion completada. Base nueva: %NUEVO% ===
+if not "%ERROR_RESPALDO%"=="0" (
+    echo ERROR: el respaldo semanal fallo. Se reintenta en la proxima corrida.
+    exit /b 1
+)
 exit /b 0

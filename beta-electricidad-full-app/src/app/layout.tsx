@@ -22,6 +22,8 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  // Fuera de producción (NEXT_PUBLIC_INDEXAR != "true") no se indexa. Ver robots.ts.
+  robots: process.env.NEXT_PUBLIC_INDEXAR === "true" ? undefined : { index: false, follow: false },
   title: {
     default: "Beta Electricidad | Materiales Eléctricos en La Falda, Córdoba",
     template: "%s | Beta Electricidad",

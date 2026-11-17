@@ -115,8 +115,10 @@ class SupabaseClient:
             return {"ok": True, "count": len(rows)}
 
         headers = {**self.headers, "Prefer": "resolution=merge-duplicates,return=minimal"}
+        # on_conflict=codigo: sin esto PostgREST resuelve por la PK (`id`), que
+        # no viene del ERP, e intenta insertar como nuevos los que ya existen.
         resp = requests.post(
-            self._endpoint(tabla),
+            f"{self._endpoint(tabla)}?on_conflict=codigo",
             headers=headers,
             data=json.dumps(rows),
             timeout=30,
@@ -213,6 +215,15 @@ def leer_cambios(ruta: Path):
         desactivar = [f.get("Código") for f in filas if f.get("Código")]
 
     wb.close()
+
+    # `nombre` es obligatorio en la tabla: un artículo sin descripción en el ERP
+    # haría fallar todo su lote. Se saltea y se avisa para corregirlo en el ERP.
+    sin_nombre = [r.get("codigo") for r in upserts if not str(r.get("nombre") or "").strip()]
+    if sin_nombre:
+        print(f"  AVISO: {len(sin_nombre)} artículo(s) sin descripción en el ERP, no se suben: "
+              f"{', '.join(str(c) for c in sin_nombre)}")
+        upserts = [r for r in upserts if str(r.get("nombre") or "").strip()]
+
     return upserts, desactivar
 
 
@@ -395,6 +406,8 @@ def main():
     print(f"  Tiempo:                {elapsed:.1f}s")
     print(f"{'─'*40}")
     print("\nSincronización completa." if not errores else "\nSincronización con errores — revisá los mensajes arriba.")
+    if errores:
+        sys.exit(1)   # para que sincronizar.bat (y la tarea programada) lo registre como falla
 
 
 if __name__ == "__main__":

@@ -1,107 +1,139 @@
 """
-cargar_seleccion_catalogo.py — Carga la selección curada en `catalogo_web`.
+cargar_seleccion_catalogo.py — Sube la planilla de curaduría a `catalogo_web`.
 
-Lee el Excel de curaduría (columna "Incluir (S/N)") y marca como publicados
-en `catalogo_web` los códigos con "S", con su categoría web.
-Solo escribe las columnas codigo, publicado y categoria_web: no pisa nombres,
-descripciones ni el orden que se carguen después desde el admin.
+Lee curaduria/catalogo_web_seleccion.xlsx (la genera generar_planilla_curaduria.py):
+  * Filas con "S" en Publicar → publicadas, con categoría, subcategoría,
+    nombre web, URL de imagen y destacado tal como están en la planilla.
+  * Productos que estaban publicados y en la planilla ya no tienen "S" →
+    se despublican (no se borran: conservan sus datos).
+No toca `descripcion` ni `orden` (no están en la planilla).
+Mientras no exista el panel de administración, la planilla es la fuente de verdad.
 
 Uso:
-    python cargar_seleccion_catalogo.py --dry-run
+    python cargar_seleccion_catalogo.py --dry-run     # muestra qué haría
     python cargar_seleccion_catalogo.py
     python cargar_seleccion_catalogo.py --excel otra_ruta.xlsx
 
-Requiere .env en esta carpeta con SUPABASE_URL y SUPABASE_KEY (service_role),
-igual que sincronizar_db.py. Requiere haber corrido las migraciones de
-supabase/migrations/.
+Requiere .env con SUPABASE_URL y SUPABASE_KEY (sb_secret_) y las migraciones
+de supabase/migrations/ aplicadas (incluida la 20261118000003).
 """
 import argparse
+import collections
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-
-import openpyxl
-import openpyxl.reader.excel as _rx
-
-# Algunos Excel guardados por otras apps traen estilos que openpyxl no entiende;
-# no los necesitamos para leer valores.
-_rx.apply_stylesheet = lambda archive, wb: None
+from openpyxl import load_workbook
 
 AQUI = Path(__file__).parent
-EXCEL_DEFECTO = AQUI / "curaduria" / "top200_iluminacion_llaves.xlsx"
-HOJAS = ("Top 200", "Resto con ventas")
+EXCEL_DEFECTO = AQUI / "curaduria" / "catalogo_web_seleccion.xlsx"
+CATEGORIAS = {"Iluminación", "Llaves y tomas", "Cables", "Cajas y tableros",
+              "Cañerías y accesorios", "Protecciones", "Otros"}
+LOTE = 500
 
 
-def leer_seleccion(ruta: Path) -> list[dict]:
-    wb = openpyxl.load_workbook(ruta, read_only=True, data_only=True)
-    filas = []
-    for hoja in HOJAS:
-        if hoja not in wb.sheetnames:
+def texto(v) -> str | None:
+    s = str(v).strip() if v is not None else ""
+    return s or None
+
+
+def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
+    """Devuelve (filas a publicar, códigos presentes en la planilla, avisos)."""
+    wb = load_workbook(ruta, read_only=True, data_only=True)
+    if "Productos" not in wb.sheetnames:
+        sys.exit(f"{ruta.name} no tiene la hoja 'Productos'. ¿Es la planilla de generar_planilla_curaduria.py?")
+    filas = wb["Productos"].iter_rows(values_only=True)
+    cab = [str(c).strip() if c else "" for c in next(filas)]
+    publicar, presentes, avisos = [], set(), []
+    for r in filas:
+        d = dict(zip(cab, r))
+        if d.get("Código") is None:
             continue
-        rows = list(wb[hoja].iter_rows(values_only=True))
-        if not rows:
+        codigo = int(d["Código"])
+        presentes.add(codigo)
+        if (texto(d.get("Publicar (S/N)")) or "").upper() != "S":
             continue
-        h = [str(c).strip() if c is not None else "" for c in rows[0]]
-        try:
-            i_cod, i_inc, i_cat = h.index("Código"), h.index("Incluir (S/N)"), h.index("Categoría web")
-        except ValueError:
-            print(f"  (hoja '{hoja}' sin columnas Código / Incluir (S/N) / Categoría web: se omite)")
-            continue
-        for r in rows[1:]:
-            if r[i_inc] and str(r[i_inc]).strip().upper() == "S" and r[i_cod] is not None:
-                filas.append({
-                    "codigo": int(str(r[i_cod]).strip()),
-                    "publicado": True,
-                    "categoria_web": (str(r[i_cat]).strip() if r[i_cat] else None),
-                })
+        cat = texto(d.get("Categoría"))
+        if cat not in CATEGORIAS:
+            avisos.append(f"{codigo}: categoría '{cat}' no válida → 'Otros'")
+            cat = "Otros"
+        url = texto(d.get("URL imagen"))
+        if url and not re.match(r"^https://", url):
+            avisos.append(f"{codigo}: la URL de imagen no empieza con https:// → se ignora")
+            url = None
+        publicar.append({
+            "codigo": codigo,
+            "publicado": True,
+            "categoria_web": cat,
+            "subcategoria_web": texto(d.get("Subcategoría")),
+            "nombre_web": texto(d.get("Nombre web (opcional)")),
+            "imagen_url": url,
+            "destacado": (texto(d.get("Destacado (S)")) or "").upper() == "S",
+        })
     wb.close()
-    # sin duplicados (si un código está en las dos hojas, queda el primero)
-    vistos, unicos = set(), []
-    for f in filas:
-        if f["codigo"] not in vistos:
-            vistos.add(f["codigo"])
-            unicos.append(f)
-    return unicos
+    return publicar, presentes, avisos
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Carga la selección curada en catalogo_web.")
+    ap = argparse.ArgumentParser(description="Sube la planilla de curaduría a catalogo_web.")
     ap.add_argument("--excel", type=Path, default=EXCEL_DEFECTO)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+    if not args.excel.exists():
+        sys.exit(f"No existe {args.excel}. Generala con: python generar_planilla_curaduria.py")
 
-    filas = leer_seleccion(args.excel)
-    print(f"Productos marcados con S: {len(filas)}")
-    if not filas:
-        return 0
-    if args.dry_run:
-        print("[DRY-RUN] Ejemplo:", json.dumps(filas[:3], ensure_ascii=False))
-        return 0
+    publicar, presentes, avisos = leer_planilla(args.excel)
+    for a in avisos:
+        print("  AVISO", a)
 
     load_dotenv(AQUI / ".env")
     url, key = os.getenv("SUPABASE_URL", "").rstrip("/"), os.getenv("SUPABASE_KEY", "")
-    if not url or not key:
-        sys.exit("Falta SUPABASE_URL o SUPABASE_KEY en .env")
+    if not url or not key or key.startswith("sb_publishable_"):
+        sys.exit("SUPABASE_KEY en .env debe ser la sb_secret_.")
+    h = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
-    resp = requests.post(
-        f"{url}/rest/v1/catalogo_web?on_conflict=codigo",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal",
-        },
-        data=json.dumps(filas),
-        timeout=30,
-    )
-    if resp.status_code not in (200, 201, 204):
-        print(f"ERROR {resp.status_code}: {resp.text[:300]}")
-        return 1
-    print(f"Listo: {len(filas)} productos publicados en catalogo_web.")
+    r = requests.get(f"{url}/rest/v1/catalogo_web?select=codigo&publicado=eq.true", headers=h, timeout=60)
+    r.raise_for_status()
+    ya_publicados = {x["codigo"] for x in r.json()}
+    marcados = {f["codigo"] for f in publicar}
+    despublicar = sorted((ya_publicados & presentes) - marcados)
+
+    por_cat = collections.Counter(f["categoria_web"] for f in publicar)
+    con_foto = sum(1 for f in publicar if f["imagen_url"])
+    print(f"A publicar: {len(publicar)} ({len(marcados - ya_publicados)} nuevos), con foto: {con_foto}")
+    for cat, n in por_cat.most_common():
+        print(f"  {n:5}  {cat}")
+    print(f"A despublicar: {len(despublicar)}")
+
+    if args.dry_run:
+        print("[DRY-RUN] No se escribió nada.")
+        return 0
+
+    for i in range(0, len(publicar), LOTE):
+        r = requests.post(
+            f"{url}/rest/v1/catalogo_web?on_conflict=codigo",
+            headers={**h, "Prefer": "resolution=merge-duplicates,return=minimal"},
+            data=json.dumps(publicar[i:i + LOTE]), timeout=60)
+        if r.status_code not in (200, 201, 204):
+            if "subcategoria_web" in r.text or "imagen_url" in r.text:
+                print("Falta aplicar la migración supabase/migrations/20261118000003_catalogo_web_fase1.sql")
+            print(f"ERROR {r.status_code}: {r.text[:300]}")
+            return 1
+
+    for i in range(0, len(despublicar), LOTE):
+        cods = ",".join(map(str, despublicar[i:i + LOTE]))
+        r = requests.patch(f"{url}/rest/v1/catalogo_web?codigo=in.({cods})",
+                           headers={**h, "Prefer": "return=minimal"},
+                           data=json.dumps({"publicado": False}), timeout=60)
+        if r.status_code not in (200, 204):
+            print(f"ERROR al despublicar {r.status_code}: {r.text[:300]}")
+            return 1
+
+    print(f"Listo: {len(publicar)} publicados, {len(despublicar)} despublicados.")
     return 0
 
 

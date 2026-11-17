@@ -12,6 +12,7 @@
 /catalogo_*.xlsx
 /cambios_*.xlsx
 /historial/
+/logs/
 
 # Artefactos locales / empaquetados
 /project.zip

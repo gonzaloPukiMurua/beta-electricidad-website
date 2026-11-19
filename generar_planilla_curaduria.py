@@ -23,9 +23,12 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
+
+from planilla_xlsx import leer_hoja
+
 
 AQUI = Path(__file__).parent
 SALIDA = AQUI / "curaduria" / "catalogo_web_seleccion.xlsx"
@@ -94,6 +97,33 @@ MAPEO = {
     "DIFERENCIALES": ("Protecciones", "Disyuntores diferenciales"),
     "PROTECTOR TENSION": ("Protecciones", "Protectores de tensión"),
     "DESCARGADOR ATMOS": ("Protecciones", "Descargadores"),
+    # Agregados al ver la primera selección (2026-11-19)
+    "LLAVES ARMADAS": ("Llaves y tomas", "Llaves armadas"),
+    "LLAVE CAPSULADA": ("Llaves y tomas", "Llaves armadas"),
+    "PORTALAMPARAS": ("Iluminación", "Portalámparas y accesorios"),
+    "CABLES P/COLGANTES": ("Iluminación", "Portalámparas y accesorios"),
+    "ARTEFACTOS P/TUBOS": ("Iluminación", "Artefactos para tubos"),
+    "TUBOS FLUORESCENTES": ("Iluminación", "Lámparas"),
+    "LAMPARA FANTASIA": ("Iluminación", "Lámparas"),
+    "LAMPARA HALOGENA": ("Iluminación", "Lámparas"),
+    "LAMPARAS PL": ("Iluminación", "Lámparas"),
+    "LAMPARA BAJO CONSUMO": ("Iluminación", "Lámparas"),
+    "TORTUGAS": ("Iluminación", "Tortugas"),
+    "TORTUGA LED": ("Iluminación", "Tortugas"),
+    "CINTA LED": ("Iluminación", "Cintas LED y fuentes"),
+    "FUENTE CORRIENTE DC": ("Iluminación", "Cintas LED y fuentes"),
+    "DRIVER LED": ("Iluminación", "Cintas LED y fuentes"),
+    "LUZ EMERGENCIA": ("Iluminación", "Emergencia"),
+    "EMERGENCIA": ("Iluminación", "Emergencia"),
+    "FOTOCONTROL": ("Iluminación", "Fotocontroles y sensores"),
+    "SENSOR MOVIMIENTO": ("Iluminación", "Fotocontroles y sensores"),
+    "PILAR HORMIGON": ("Cajas y tableros", "Pilares y medidores"),
+    "KIT PILAR": ("Cajas y tableros", "Pilares y medidores"),
+    "ACCESORIOS PILAR": ("Cajas y tableros", "Pilares y medidores"),
+    "MEDIDOR INTERNO": ("Cajas y tableros", "Pilares y medidores"),
+    "PASACABLE": ("Cajas y tableros", "Accesorios para cajas y tableros"),
+    "CINTA AISLADORA": ("Otros", "Cintas aisladoras"),
+    "HERRAMIENTAS": ("Otros", "Herramientas"),
 }
 # Nombres de categoría de la selección inicial que cambiaron.
 CATEGORIA_LEGADA = {"Llaves": "Llaves y tomas"}
@@ -138,9 +168,7 @@ def leer_productos() -> list[dict]:
 def leer_anterior(ruta: Path) -> dict[int, dict]:
     if not ruta.exists():
         return {}
-    wb = load_workbook(ruta, read_only=True, data_only=True)
-    ws = wb["Productos"]
-    rows = ws.iter_rows(values_only=True)
+    rows = iter(leer_hoja(ruta, "Productos"))
     cab = [str(c) if c else "" for c in next(rows)]
     previo = {}
     for r in rows:
@@ -150,7 +178,6 @@ def leer_anterior(ruta: Path) -> dict[int, dict]:
         datos = {k: d.get(k) for k in EDITABLES if d.get(k) not in (None, "")}
         if datos:
             previo[int(d["Código"])] = datos
-    wb.close()
     return previo
 
 

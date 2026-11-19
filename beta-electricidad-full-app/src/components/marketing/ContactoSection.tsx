@@ -1,6 +1,6 @@
 export function ContactoSection() {
   return (
-    <section className="py-20 px-6 bg-white">
+    <section id="contacto" className="scroll-mt-20 py-20 px-6 bg-white">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
         
         {/* Datos de contacto */}

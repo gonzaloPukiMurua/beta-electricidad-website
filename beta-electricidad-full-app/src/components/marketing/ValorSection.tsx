@@ -18,7 +18,7 @@ const PILARES = [
 
 export function ValorSection() {
   return (
-    <section className="py-20 px-6 bg-white">
+    <section id="nosotros" className="scroll-mt-20 py-20 px-6 bg-white">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
         {PILARES.map((p) => (
           <div key={p.titulo}>

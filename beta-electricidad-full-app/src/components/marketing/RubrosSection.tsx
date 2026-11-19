@@ -10,7 +10,7 @@ const RUBROS = [
 
 export function RubrosSection() {
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section id="rubros" className="scroll-mt-20 py-20 px-6 bg-gray-50">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold text-center text-[var(--brand-secondary)] mb-12">
           Nuestros rubros

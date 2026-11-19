@@ -27,7 +27,9 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from openpyxl import load_workbook
+from generar_planilla_curaduria import MAPEO
+from planilla_xlsx import hojas, leer_hoja
+
 
 AQUI = Path(__file__).parent
 EXCEL_DEFECTO = AQUI / "curaduria" / "catalogo_web_seleccion.xlsx"
@@ -43,10 +45,9 @@ def texto(v) -> str | None:
 
 def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
     """Devuelve (filas a publicar, códigos presentes en la planilla, avisos)."""
-    wb = load_workbook(ruta, read_only=True, data_only=True)
-    if "Productos" not in wb.sheetnames:
+    if "Productos" not in hojas(ruta):
         sys.exit(f"{ruta.name} no tiene la hoja 'Productos'. ¿Es la planilla de generar_planilla_curaduria.py?")
-    filas = wb["Productos"].iter_rows(values_only=True)
+    filas = iter(leer_hoja(ruta, "Productos"))
     cab = [str(c).strip() if c else "" for c in next(filas)]
     publicar, presentes, avisos = [], set(), []
     for r in filas:
@@ -57,7 +58,12 @@ def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
         presentes.add(codigo)
         if (texto(d.get("Publicar (S/N)")) or "").upper() != "S":
             continue
-        cat = texto(d.get("Categoría"))
+        cat, sub = texto(d.get("Categoría")), texto(d.get("Subcategoría"))
+        sug_cat, sug_sub = MAPEO.get(texto(d.get("Rubro ERP")) or "", (None, None))
+        if not cat:                      # vacía: la sugerida por rubro
+            cat = sug_cat
+        if not sub and cat == sug_cat:   # subcategoría sugerida si la categoría coincide
+            sub = sug_sub
         if cat not in CATEGORIAS:
             avisos.append(f"{codigo}: categoría '{cat}' no válida → 'Otros'")
             cat = "Otros"
@@ -69,12 +75,11 @@ def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
             "codigo": codigo,
             "publicado": True,
             "categoria_web": cat,
-            "subcategoria_web": texto(d.get("Subcategoría")),
+            "subcategoria_web": sub,
             "nombre_web": texto(d.get("Nombre web (opcional)")),
             "imagen_url": url,
             "destacado": (texto(d.get("Destacado (S)")) or "").upper() == "S",
         })
-    wb.close()
     return publicar, presentes, avisos
 
 

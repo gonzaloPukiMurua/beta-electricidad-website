@@ -48,19 +48,19 @@ export default async function ProductoPage({ params }: Props) {
         {p.subcategoria_web && <> / <Link href={`${urlCategoria}&sub=${encodeURIComponent(p.subcategoria_web)}`} className="hover:text-[var(--primary)]">{p.subcategoria_web}</Link></>}
       </nav>
 
-      <div className="grid gap-8 md:grid-cols-2 md:gap-12">
-        <div className="aspect-square overflow-hidden rounded-2xl border border-[var(--outline-variant)]/60 bg-[#f3f4f8]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-2 md:gap-12">
+        <div className="aspect-square min-w-0 overflow-hidden rounded-2xl border border-[var(--outline-variant)]/60 bg-[#f3f4f8]">
           <ImagenProducto src={p.imagen_url} alt={p.nombre} categoria={p.categoria_web} subcategoria={p.subcategoria_web} grande />
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           {p.marca && <span className="text-xs font-semibold uppercase tracking-wide text-[var(--secondary)]">{p.marca}</span>}
-          <h1 className="text-2xl font-bold leading-tight text-[var(--on-surface)] md:text-3xl">{p.nombre}</h1>
+          <h1 className="break-words text-2xl font-bold leading-tight text-[var(--on-surface)] md:text-3xl">{p.nombre}</h1>
           <Disponibilidad disponible={p.disponible} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 rounded-xl border border-[var(--outline-variant)]/60 bg-white p-4 text-sm">
-            <dt className="text-[var(--on-surface-variant)]">Código</dt><dd className="font-mono">{p.codigo}</dd>
-            {p.codigo_fabrica && (<><dt className="text-[var(--on-surface-variant)]">Cód. fábrica</dt><dd className="font-mono">{p.codigo_fabrica}</dd></>)}
+            <dt className="text-[var(--on-surface-variant)]">Código</dt><dd className="min-w-0 break-all font-mono">{p.codigo}</dd>
+            {p.codigo_fabrica && (<><dt className="text-[var(--on-surface-variant)]">Cód. fábrica</dt><dd className="min-w-0 break-all font-mono">{p.codigo_fabrica}</dd></>)}
             {p.marca && (<><dt className="text-[var(--on-surface-variant)]">Marca</dt><dd>{p.marca}</dd></>)}
             {p.subcategoria_web && (<><dt className="text-[var(--on-surface-variant)]">Categoría</dt><dd>{p.categoria_web} · {p.subcategoria_web}</dd></>)}
           </dl>
@@ -85,7 +85,7 @@ export default async function ProductoPage({ params }: Props) {
         <section className="mt-16" aria-label="Productos relacionados">
           <h2 className="mb-4 text-lg font-bold text-[var(--primary)]">Más en {p.subcategoria_web ?? p.categoria_web}</h2>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 md:gap-4">
-            {relacionados.map((r) => (<li key={r.codigo} className="flex"><TarjetaProducto p={r} /></li>))}
+            {relacionados.map((r) => (<li key={r.codigo} className="flex min-w-0"><TarjetaProducto p={r} /></li>))}
           </ul>
         </section>
       )}

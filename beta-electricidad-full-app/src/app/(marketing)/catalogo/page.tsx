@@ -83,11 +83,13 @@ export default async function CatalogoPage({ searchParams }: Props) {
         </form>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-[240px_1fr]">
+      {/* minmax(0,…) + min-w-0: sin esto la columna de la grilla se estira al
+          ancho de la fila de chips y toda la página desborda en el celular. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[240px_minmax(0,1fr)] md:gap-8">
         {/* Categorías */}
-        <aside aria-label="Categorías" className="md:sticky md:top-28 md:self-start">
+        <aside aria-label="Categorías" className="min-w-0 md:sticky md:top-28 md:self-start">
           {/* Móvil: chips con scroll horizontal */}
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 md:hidden">
+          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] md:hidden">
             <Chip href={enlace({ q: filtros.q, disponibles: filtros.disponibles })} activo={!filtros.categoria}>Todo</Chip>
             {arbol.map((c) => (
               <Chip key={c.nombre} href={enlace({ categoria: c.nombre, q: filtros.q, disponibles: filtros.disponibles })} activo={filtros.categoria === c.nombre}>
@@ -96,7 +98,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
             ))}
           </div>
           {catActual && catActual.subs.length > 1 && (
-            <div className="-mx-4 mt-1 flex gap-2 overflow-x-auto px-4 pb-2 md:hidden">
+            <div className="-mx-4 mt-1 flex snap-x gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] md:hidden">
               {catActual.subs.map((s) => (
                 <Chip key={s.nombre} chico href={enlace({ categoria: catActual.nombre, sub: s.nombre, q: filtros.q, disponibles: filtros.disponibles })} activo={filtros.sub === s.nombre}>
                   {s.nombre} <span className="opacity-60">{s.total}</span>
@@ -147,7 +149,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
         </aside>
 
         {/* Resultados */}
-        <section aria-label="Productos">
+        <section aria-label="Productos" className="min-w-0">
           {visibles.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--outline-variant)] bg-white p-10 text-center">
               <p className="font-semibold text-[var(--on-surface)]">No encontramos productos con esa búsqueda.</p>
@@ -161,7 +163,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
             </div>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 md:gap-4">
-              {visibles.map((p) => (<li key={p.codigo} className="flex"><TarjetaProducto p={p} /></li>))}
+              {visibles.map((p) => (<li key={p.codigo} className="flex min-w-0"><TarjetaProducto p={p} /></li>))}
             </ul>
           )}
 
@@ -186,7 +188,7 @@ export default async function CatalogoPage({ searchParams }: Props) {
 function Chip({ href, activo, chico, children }: { href: string; activo: boolean; chico?: boolean; children: React.ReactNode }) {
   return (
     <Link href={href}
-      className={`shrink-0 whitespace-nowrap rounded-full border ${chico ? "px-3 py-1 text-xs" : "px-3.5 py-1.5 text-sm"} ${activo ? "border-[var(--primary)] bg-[var(--primary)] text-white" : "border-[var(--outline-variant)] bg-white text-[var(--on-surface)]"}`}>
+      className={`shrink-0 snap-start whitespace-nowrap rounded-full border ${chico ? "px-3 py-1 text-xs" : "px-3.5 py-1.5 text-sm"} ${activo ? "border-[var(--primary)] bg-[var(--primary)] text-white" : "border-[var(--outline-variant)] bg-white text-[var(--on-surface)]"}`}>
       {children}
     </Link>
   );

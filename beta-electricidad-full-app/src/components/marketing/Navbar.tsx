@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WA_NUMBER, WA_MESSAGE } from "@/lib/constants/whatsApp";
+import { IndicadorLista } from "@/components/presupuesto/BotonAgregar";
 
 // Rutas absolutas ("/#...") para que funcionen también desde /catalogo y /producto.
 const NAV_LINKS = [
@@ -54,7 +55,8 @@ export function Navbar() {
         </nav>
 
         {/* CTA + hamburger */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <IndicadorLista onClick={() => setMenuOpen(false)} />
           <a href={WA_HREF} target="_blank" rel="noopener noreferrer" className="hidden lg:block bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 rounded-lg text-xs font-semibold tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-sm">
             Solicitar Presupuesto
           </a>

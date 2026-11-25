@@ -22,7 +22,8 @@ export type Categoria = { nombre: string; total: number; subs: { nombre: string;
 // Orden de navegación; lo que no esté acá va al final, alfabético.
 const ORDEN_CATEGORIAS = [
   "Iluminación", "Llaves y tomas", "Cables", "Cajas y tableros",
-  "Cañerías y accesorios", "Protecciones", "Otros",
+  "Cañerías y accesorios", "Protecciones", "Fuentes y transformadores",
+  "Automatización", "Herramientas", "Instrumental", "Otros",
 ];
 
 const REVALIDAR_SEGUNDOS = 3600; // la sincronización del ERP corre 2 veces por día

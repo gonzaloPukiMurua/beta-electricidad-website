@@ -6,6 +6,7 @@ import { ImagenProducto } from "@/components/catalogo/ImagenProducto";
 import { Disponibilidad } from "@/components/catalogo/Disponibilidad";
 import { TarjetaProducto } from "@/components/catalogo/TarjetaProducto";
 import { WA_NUMBER } from "@/lib/constants/whatsApp";
+import { AgregarConCantidad } from "@/components/presupuesto/BotonAgregar";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -67,15 +68,19 @@ export default async function ProductoPage({ params }: Props) {
 
           {p.descripcion && <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--on-surface-variant)]">{p.descripcion}</p>}
 
+          <div className="mt-2">
+            <AgregarConCantidad p={{ codigo: p.codigo, nombre: p.nombre, slug: slugProducto(p) }} />
+          </div>
           <a
             href={`https://wa.me/${WA_NUMBER}?text=${mensaje}`}
             target="_blank" rel="noopener noreferrer"
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-6 py-3.5 font-semibold text-white hover:brightness-105 md:w-fit"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#25D366] px-6 py-3 text-sm font-semibold text-[#128C4A] hover:bg-[#25D366]/10"
           >
-            Consultar precio y disponibilidad por WhatsApp
+            Consultar solo este producto por WhatsApp
           </a>
           <p className="text-xs text-[var(--on-surface-variant)]">
-            Te respondemos con el precio del día. Si sos instalador o comprás por cantidad, avisanos.
+            Armá tu lista con todo lo que necesitás y pedí la cotización de una vez: te respondemos con el precio del día.
+            ¿Comprás para una obra o en cantidad? Tenemos condiciones especiales por volumen.
             {p.imagen_url ? " La imagen es del fabricante y puede variar." : ""}
           </p>
         </div>

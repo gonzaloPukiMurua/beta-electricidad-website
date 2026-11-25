@@ -123,12 +123,13 @@ MAPEO = {
     "MEDIDOR INTERNO": ("Cajas y tableros", "Pilares y medidores"),
     "PASACABLE": ("Cajas y tableros", "Accesorios para cajas y tableros"),
     "CINTA AISLADORA": ("Otros", "Cintas aisladoras"),
-    "HERRAMIENTAS": ("Otros", "Herramientas"),
+    "HERRAMIENTAS": ("Herramientas", None),
 }
 # Nombres de categoría de la selección inicial que cambiaron.
-CATEGORIA_LEGADA = {"Llaves": "Llaves y tomas"}
+CATEGORIA_LEGADA = {"Llaves": "Llaves y tomas", "Automatizacion": "Automatización"}
 CATEGORIAS = ["Iluminación", "Llaves y tomas", "Cables", "Cajas y tableros",
-              "Cañerías y accesorios", "Protecciones", "Otros"]
+              "Cañerías y accesorios", "Protecciones", "Fuentes y transformadores",
+              "Automatización", "Herramientas", "Instrumental", "Otros"]
 
 COLUMNAS = [  # (título, ancho, editable)
     ("Código", 9, False), ("Cód. fábrica", 16, False), ("Descripción ERP", 46, False),

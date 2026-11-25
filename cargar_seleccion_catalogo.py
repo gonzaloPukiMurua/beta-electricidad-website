@@ -27,14 +27,12 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from generar_planilla_curaduria import MAPEO
+from generar_planilla_curaduria import CATEGORIA_LEGADA, CATEGORIAS, MAPEO
 from planilla_xlsx import hojas, leer_hoja
 
 
 AQUI = Path(__file__).parent
 EXCEL_DEFECTO = AQUI / "curaduria" / "catalogo_web_seleccion.xlsx"
-CATEGORIAS = {"Iluminación", "Llaves y tomas", "Cables", "Cajas y tableros",
-              "Cañerías y accesorios", "Protecciones", "Otros"}
 LOTE = 500
 
 
@@ -59,12 +57,16 @@ def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
         if (texto(d.get("Publicar (S/N)")) or "").upper() != "S":
             continue
         cat, sub = texto(d.get("Categoría")), texto(d.get("Subcategoría"))
+        cat = CATEGORIA_LEGADA.get(cat, cat)
         sug_cat, sug_sub = MAPEO.get(texto(d.get("Rubro ERP")) or "", (None, None))
         if not cat:                      # vacía: la sugerida por rubro
             cat = sug_cat
         if not sub and cat == sug_cat:   # subcategoría sugerida si la categoría coincide
             sub = sug_sub
-        if cat not in CATEGORIAS:
+        if not cat:
+            avisos.append(f"{codigo}: sin categoría y el rubro '{texto(d.get('Rubro ERP'))}' no tiene sugerida → 'Otros'")
+            cat = "Otros"
+        elif cat not in CATEGORIAS:
             avisos.append(f"{codigo}: categoría '{cat}' no válida → 'Otros'")
             cat = "Otros"
         url = texto(d.get("URL imagen"))

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { WA_NUMBER, WA_MESSAGE } from "@/lib/constants/whatsApp";
 import { IndicadorLista } from "@/components/presupuesto/BotonAgregar";
 
 // Rutas absolutas ("/#...") para que funcionen también desde /catalogo y /producto.
@@ -14,7 +13,8 @@ const NAV_LINKS = [
   { label: "Nosotros", href: "/#nosotros" },
   { label: "Contacto", href: "/#contacto" },
 ];
-const WA_HREF = `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`;
+// "Solicitar Presupuesto" lleva a la lista; la consulta directa sigue en el botón flotante de WhatsApp.
+const PRESUPUESTO_HREF = "/presupuesto";
 
 function activo(href: string, pathname: string) {
   if (href === "/") return pathname === "/";
@@ -57,9 +57,9 @@ export function Navbar() {
         {/* CTA + hamburger */}
         <div className="flex items-center gap-3 md:gap-4">
           <IndicadorLista onClick={() => setMenuOpen(false)} />
-          <a href={WA_HREF} target="_blank" rel="noopener noreferrer" className="hidden lg:block bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 rounded-lg text-xs font-semibold tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-sm">
+          <Link href={PRESUPUESTO_HREF} className="hidden lg:block bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 rounded-lg text-xs font-semibold tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-sm">
             Solicitar Presupuesto
-          </a>
+          </Link>
           <button
             className="md:hidden text-[var(--primary)]"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -83,9 +83,9 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <a href={WA_HREF} target="_blank" rel="noopener noreferrer" className="bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 rounded-lg text-xs font-semibold tracking-wide w-full text-center">
+          <Link href={PRESUPUESTO_HREF} onClick={() => setMenuOpen(false)} className="bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 rounded-lg text-xs font-semibold tracking-wide w-full text-center">
             Solicitar Presupuesto
-          </a>
+          </Link>
         </div>
       )}
     </header>

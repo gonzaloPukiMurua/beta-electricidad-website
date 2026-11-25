@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { codigoDesdeSlug, obtenerCatalogo, obtenerProducto, slugProducto } from "@/lib/catalogo";
+import { bultoDe, codigoDesdeSlug, obtenerCatalogo, obtenerProducto, slugProducto, textoBulto } from "@/lib/catalogo";
 import { ImagenProducto } from "@/components/catalogo/ImagenProducto";
 import { Disponibilidad } from "@/components/catalogo/Disponibilidad";
 import { TarjetaProducto } from "@/components/catalogo/TarjetaProducto";
@@ -39,6 +39,7 @@ export default async function ProductoPage({ params }: Props) {
   const relacionados = (await obtenerCatalogo())
     .filter((x) => x.codigo !== p.codigo && x.subcategoria_web === p.subcategoria_web && x.categoria_web === p.categoria_web)
     .slice(0, 4);
+  const bulto = bultoDe(p);
   const urlCategoria = p.categoria_web ? `/catalogo?categoria=${encodeURIComponent(p.categoria_web)}` : "/catalogo";
 
   return (
@@ -63,13 +64,14 @@ export default async function ProductoPage({ params }: Props) {
             <dt className="text-[var(--on-surface-variant)]">Código</dt><dd className="min-w-0 break-all font-mono">{p.codigo}</dd>
             {p.codigo_fabrica && (<><dt className="text-[var(--on-surface-variant)]">Cód. fábrica</dt><dd className="min-w-0 break-all font-mono">{p.codigo_fabrica}</dd></>)}
             {p.marca && (<><dt className="text-[var(--on-surface-variant)]">Marca</dt><dd>{p.marca}</dd></>)}
+            {bulto && (<><dt className="text-[var(--on-surface-variant)]">Se vende por</dt><dd><strong>{textoBulto(bulto)}</strong> <span className="text-[var(--on-surface-variant)]">(no se fracciona)</span></dd></>)}
             {p.subcategoria_web && (<><dt className="text-[var(--on-surface-variant)]">Categoría</dt><dd>{p.categoria_web} · {p.subcategoria_web}</dd></>)}
           </dl>
 
           {p.descripcion && <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--on-surface-variant)]">{p.descripcion}</p>}
 
           <div className="mt-2">
-            <AgregarConCantidad p={{ codigo: p.codigo, nombre: p.nombre, slug: slugProducto(p) }} />
+            <AgregarConCantidad p={{ codigo: p.codigo, nombre: p.nombre, slug: slugProducto(p), bulto: bulto ?? undefined }} />
           </div>
           <a
             href={`https://wa.me/${WA_NUMBER}?text=${mensaje}`}

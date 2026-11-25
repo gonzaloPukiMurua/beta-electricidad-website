@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { agregar, MAX_CANT, useLista } from "@/lib/presupuesto";
+import { agregar, MAX_CANT, useLista, type ItemLista } from "@/lib/presupuesto";
+import { textoBulto } from "@/lib/catalogo";
 
-type P = { codigo: number; nombre: string; slug: string };
+type P = Omit<ItemLista, "cant">;
 
 // Botón compacto para las tarjetas del catálogo.
 export function BotonAgregar({ p }: { p: P }) {
@@ -50,9 +51,14 @@ export function AgregarConCantidad({ p }: { p: P }) {
           Agregar a la lista
         </button>
       </div>
+      {p.bulto && (
+        <p className="text-xs text-[var(--on-surface-variant)]">
+          {cant} {textoBulto(p.bulto, cant)} = <strong>{(cant * p.bulto.cantidad).toLocaleString("es-AR")} {p.bulto.unidad}</strong>
+        </p>
+      )}
       {(ok || item) && (
         <p className="text-xs text-[var(--on-surface-variant)]" role="status">
-          {item ? <>Tenés {item.cant} en tu lista. </> : null}
+          {item ? <>Tenés {item.cant}{item.bulto ? ` ${textoBulto(item.bulto, item.cant)}` : ""} en tu lista. </> : null}
           <Link href="/presupuesto" className="font-semibold text-[var(--primary)] underline">Ver lista y pedir cotización</Link>
         </p>
       )}

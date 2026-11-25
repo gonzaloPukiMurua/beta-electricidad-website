@@ -15,7 +15,28 @@ export type Producto = {
   disponible: boolean;
   precio_un_pago: number | null;
   imagen_url: string | null;
+  // Bulto no fraccionable (migración 20261125000004); null = por unidad del ERP.
+  venta_bulto?: string | null;
+  venta_cantidad?: number | null;
+  venta_unidad?: string | null;
 };
+
+export type Bulto = { nombre: string; cantidad: number; unidad: string };
+
+export function bultoDe(p: Pick<Producto, "venta_bulto" | "venta_cantidad" | "venta_unidad">): Bulto | null {
+  const cantidad = Number(p.venta_cantidad);
+  return p.venta_bulto && cantidad > 0 ? { nombre: p.venta_bulto, cantidad, unidad: p.venta_unidad || "u" } : null;
+}
+
+export function plural(palabra: string, n: number): string {
+  if (n === 1) return palabra;
+  return /[aeiouáéíóú]$/i.test(palabra) ? `${palabra}s` : `${palabra}es`;
+}
+
+// "varilla de 3 m", "caja de 100 u"
+export function textoBulto(b: Bulto, n = 1): string {
+  return `${plural(b.nombre, n)} de ${b.cantidad.toLocaleString("es-AR")} ${b.unidad}`;
+}
 
 export type Categoria = { nombre: string; total: number; subs: { nombre: string; total: number }[] };
 

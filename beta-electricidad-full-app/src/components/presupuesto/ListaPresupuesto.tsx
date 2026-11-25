@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { cambiarCantidad, mensajeLista, quitar, useLista, vaciar, MAX_CANT } from "@/lib/presupuesto";
 import { EMAIL_CONTACTO, WA_NUMBER } from "@/lib/constants/whatsApp";
+import { textoBulto } from "@/lib/catalogo";
 
 export function ListaPresupuesto() {
   const lista = useLista();
@@ -25,7 +26,6 @@ export function ListaPresupuesto() {
   }
 
   const texto = mensajeLista(lista, datos);
-  const unidades = lista.reduce((a, x) => a + x.cant, 0);
   const wa = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(texto)}`;
   const mail = `mailto:${EMAIL_CONTACTO}?subject=${encodeURIComponent("Pedido de cotización")}&body=${encodeURIComponent(texto)}`;
   const campo = "w-full rounded-lg border border-[var(--outline-variant)] bg-white px-3 py-2.5 text-sm focus:border-[var(--primary)] focus:outline-none";
@@ -40,6 +40,11 @@ export function ListaPresupuesto() {
                 {x.nombre}
               </Link>
               <p className="font-mono text-[11px] text-[var(--on-surface-variant)]">Cód. {x.codigo}</p>
+              {x.bulto && (
+                <p className="text-xs text-[var(--primary)]">
+                  {x.cant} {textoBulto(x.bulto, x.cant)} = {(x.cant * x.bulto.cantidad).toLocaleString("es-AR")} {x.bulto.unidad}
+                </p>
+              )}
             </div>
             <div className="flex items-center rounded-lg border border-[var(--outline-variant)]">
               <button type="button" aria-label={`Restar ${x.nombre}`} onClick={() => cambiarCantidad(x.codigo, x.cant - 1)}
@@ -58,7 +63,7 @@ export function ListaPresupuesto() {
       </ul>
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--on-surface-variant)]">
-        <span>{lista.length} {lista.length === 1 ? "producto" : "productos"} · {unidades} {unidades === 1 ? "unidad" : "unidades"}</span>
+        <span>{lista.length} {lista.length === 1 ? "producto" : "productos"}</span>
         <div className="flex gap-4">
           <Link href="/catalogo" className="font-semibold text-[var(--primary)] underline">Seguir agregando</Link>
           {confirmarVaciar ? (

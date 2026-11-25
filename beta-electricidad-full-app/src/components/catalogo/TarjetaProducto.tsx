@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { slugProducto, type Producto } from "@/lib/catalogo";
+import { bultoDe, slugProducto, textoBulto, type Producto } from "@/lib/catalogo";
 import { ImagenProducto } from "./ImagenProducto";
 import { Disponibilidad } from "./Disponibilidad";
 import { BotonAgregar } from "@/components/presupuesto/BotonAgregar";
@@ -7,6 +7,7 @@ import { BotonAgregar } from "@/components/presupuesto/BotonAgregar";
 // El botón de la lista va fuera del <Link>: un botón dentro de un enlace no es válido.
 export function TarjetaProducto({ p }: { p: Producto }) {
   const slug = slugProducto(p);
+  const bulto = bultoDe(p);
   return (
     <div className="group flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--outline-variant)]/60 bg-white transition-shadow hover:shadow-md">
       <Link href={`/producto/${slug}`} className="flex flex-1 flex-col focus-visible:outline-2 focus-visible:outline-[var(--primary)]">
@@ -21,13 +22,14 @@ export function TarjetaProducto({ p }: { p: Producto }) {
           <span className="break-all font-mono text-[11px] text-[var(--on-surface-variant)]">
             Cód. {p.codigo}{p.codigo_fabrica ? ` · ${p.codigo_fabrica}` : ""}
           </span>
+          {bulto && <span className="text-[11px] font-medium text-[var(--primary)]">Por {textoBulto(bulto)}</span>}
           <div className="mt-auto pt-1">
             <Disponibilidad disponible={p.disponible} />
           </div>
         </div>
       </Link>
       <div className="px-3 pb-3">
-        <BotonAgregar p={{ codigo: p.codigo, nombre: p.nombre, slug }} />
+        <BotonAgregar p={{ codigo: p.codigo, nombre: p.nombre, slug, bulto: bulto ?? undefined }} />
       </div>
     </div>
   );

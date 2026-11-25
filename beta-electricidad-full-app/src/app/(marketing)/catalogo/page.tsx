@@ -87,7 +87,8 @@ export default async function CatalogoPage({ searchParams }: Props) {
           ancho de la fila de chips y toda la página desborda en el celular. */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[240px_minmax(0,1fr)] md:gap-8">
         {/* Categorías */}
-        <aside aria-label="Categorías" className="min-w-0 md:sticky md:top-28 md:self-start">
+        {/* Fija al hacer scroll, pero con scroll propio si la lista es más alta que la pantalla. */}
+        <aside aria-label="Categorías" className="min-w-0 md:sticky md:top-28 md:max-h-[calc(100vh-8rem)] md:self-start md:overflow-y-auto md:overscroll-contain md:pr-2 md:pb-4">
           {/* Móvil: chips con scroll horizontal */}
           <div className="-mx-4 flex snap-x gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] md:hidden">
             <Chip href={enlace({ q: filtros.q, disponibles: filtros.disponibles })} activo={!filtros.categoria}>Todo</Chip>

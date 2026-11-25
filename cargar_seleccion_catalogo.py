@@ -41,6 +41,23 @@ def texto(v) -> str | None:
     return s or None
 
 
+def venta_bulto(codigo: int, d: dict, avisos: list[str]) -> tuple[str | None, float | None, str | None]:
+    """(bulto, cantidad, unidad) o (None, None, None) si se vende por unidad del ERP."""
+    bulto = (texto(d.get("Vende por (bulto)")) or "").lower() or None
+    crudo = texto(d.get("Cant. por bulto"))
+    unidad = (texto(d.get("Unidad ERP")) or "").lower() or None
+    if not bulto:
+        return None, None, None
+    try:
+        cant = float(str(crudo).replace(",", ".")) if crudo else 0
+    except ValueError:
+        cant = 0
+    if cant <= 0:
+        avisos.append(f"{codigo}: bulto '{bulto}' sin 'Cant. por bulto' válida → se vende por unidad")
+        return None, None, None
+    return bulto, int(cant) if cant.is_integer() else cant, unidad or "u"
+
+
 def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
     """Devuelve (filas a publicar, códigos presentes en la planilla, avisos)."""
     if "Productos" not in hojas(ruta):
@@ -73,6 +90,7 @@ def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
         if url and not re.match(r"^https://", url):
             avisos.append(f"{codigo}: la URL de imagen no empieza con https:// → se ignora")
             url = None
+        bulto, cant_b, unidad = venta_bulto(codigo, d, avisos)
         publicar.append({
             "codigo": codigo,
             "publicado": True,
@@ -81,6 +99,9 @@ def leer_planilla(ruta: Path) -> tuple[list[dict], set[int], list[str]]:
             "nombre_web": texto(d.get("Nombre web (opcional)")),
             "imagen_url": url,
             "destacado": (texto(d.get("Destacado (S)")) or "").upper() == "S",
+            "venta_bulto": bulto,
+            "venta_cantidad": cant_b,
+            "venta_unidad": unidad,
         })
     return publicar, presentes, avisos
 
@@ -114,6 +135,7 @@ def main() -> int:
     print(f"A publicar: {len(publicar)} ({len(marcados - ya_publicados)} nuevos), con foto: {con_foto}")
     for cat, n in por_cat.most_common():
         print(f"  {n:5}  {cat}")
+    print(f"Con bulto de venta: {sum(1 for f in publicar if f['venta_bulto'])}")
     print(f"A despublicar: {len(despublicar)}")
 
     if args.dry_run:
@@ -128,6 +150,8 @@ def main() -> int:
         if r.status_code not in (200, 201, 204):
             if "subcategoria_web" in r.text or "imagen_url" in r.text:
                 print("Falta aplicar la migración supabase/migrations/20261118000003_catalogo_web_fase1.sql")
+            if "venta_" in r.text:
+                print("Falta aplicar la migración supabase/migrations/20261125000004_catalogo_web_bulto.sql")
             print(f"ERROR {r.status_code}: {r.text[:300]}")
             return 1
 

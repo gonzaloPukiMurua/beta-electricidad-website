@@ -3,8 +3,11 @@
 // datos personales del lado servidor.
 
 import { useSyncExternalStore } from "react";
+import { textoBulto, type Bulto } from "@/lib/catalogo";
 
-export type ItemLista = { codigo: number; nombre: string; slug: string; cant: number };
+// `cant` cuenta bultos si el producto tiene bulto (2 varillas), si no, unidades del ERP.
+export type ItemLista = { codigo: number; nombre: string; slug: string; cant: number; bulto?: Bulto };
+type NuevoItem = Omit<ItemLista, "cant">;
 
 const CLAVE = "beta.presupuesto.v1";
 export const MAX_ITEMS = 100;
@@ -21,7 +24,12 @@ function leer(): ItemLista[] {
     if (!Array.isArray(crudo)) return [];
     return crudo
       .filter((x) => Number.isInteger(x?.codigo) && typeof x?.nombre === "string")
-      .map((x) => ({ codigo: x.codigo, nombre: x.nombre, slug: String(x.slug ?? x.codigo), cant: acotar(x.cant) }))
+      .map((x) => ({
+        codigo: x.codigo, nombre: x.nombre, slug: String(x.slug ?? x.codigo), cant: acotar(x.cant),
+        bulto: x.bulto && typeof x.bulto.nombre === "string" && Number(x.bulto.cantidad) > 0
+          ? { nombre: x.bulto.nombre, cantidad: Number(x.bulto.cantidad), unidad: String(x.bulto.unidad ?? "u") }
+          : undefined,
+      }))
       .slice(0, MAX_ITEMS);
   } catch {
     return []; // modo privado, almacenamiento bloqueado o dato corrupto
@@ -70,11 +78,11 @@ export function useLista(): ItemLista[] {
   return useSyncExternalStore(suscribir, instantanea, () => VACIA);
 }
 
-export function agregar(p: { codigo: number; nombre: string; slug: string }, cant = 1) {
+export function agregar(p: NuevoItem, cant = 1) {
   const lista = instantanea();
   const i = lista.findIndex((x) => x.codigo === p.codigo);
   if (i >= 0) {
-    guardar(lista.map((x, j) => (j === i ? { ...x, cant: acotar(x.cant + cant) } : x)));
+    guardar(lista.map((x, j) => (j === i ? { ...x, ...p, cant: acotar(x.cant + cant) } : x)));
   } else if (lista.length < MAX_ITEMS) {
     guardar([...lista, { ...p, cant: acotar(cant) }]);
   }
@@ -92,12 +100,19 @@ export function vaciar() {
   guardar([]);
 }
 
+// La cantidad que va primero es la del ERP (metros, unidades), lista para cargar.
+export function lineaItem(x: ItemLista): string {
+  if (!x.bulto) return `${x.cant} x [${x.codigo}] ${x.nombre}`;
+  const total = (x.cant * x.bulto.cantidad).toLocaleString("es-AR");
+  return `${total} ${x.bulto.unidad} (${x.cant} ${textoBulto(x.bulto, x.cant)}) x [${x.codigo}] ${x.nombre}`;
+}
+
 // Formato pensado para cargarlo directo como presupuesto en el ERP.
 export function mensajeLista(lista: ItemLista[], datos: { nombre?: string; localidad?: string; notas?: string }): string {
   const lineas = [
     "Pedido de cotización - Beta Electricidad",
     "",
-    ...lista.map((x) => `${x.cant} x [${x.codigo}] ${x.nombre}`),
+    ...lista.map(lineaItem),
     "",
     `${lista.length} ${lista.length === 1 ? "producto" : "productos"}.`,
   ];

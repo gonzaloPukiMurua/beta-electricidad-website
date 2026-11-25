@@ -136,8 +136,25 @@ COLUMNAS = [  # (título, ancho, editable)
     ("Rubro ERP", 22, False), ("Marca", 14, False), ("Stock", 8, False),
     ("Publicar (S/N)", 9, True), ("Categoría", 20, True), ("Subcategoría", 24, True),
     ("Nombre web (opcional)", 34, True), ("URL imagen", 40, True),
-    ("Destacado (S)", 9, True), ("Notas", 24, True),
+    ("Destacado (S)", 9, True),
+    ("Vende por (bulto)", 14, True), ("Cant. por bulto", 9, True), ("Unidad ERP", 8, True),
+    ("Notas", 24, True),
 ]
+BULTOS = ["varilla", "rollo", "caja", "bolsa", "paquete", "blister"]
+
+
+def bulto_sugerido(p: dict) -> tuple[str | None, float | None, str | None]:
+    """Bulto no fraccionable para artículos con precio por metro en el ERP.
+    Solo los casos claros; el resto se carga a mano en la planilla."""
+    nombre = (p.get("nombre") or "").upper()
+    rubro = p.get("rubro") or ""
+    if "P/METRO" not in nombre and "X METRO" not in nombre:
+        return None, None, None
+    if rubro == "CAÑERIA PLASTICA" and "RIGIDO" in nombre:
+        return "varilla", 3, "m"
+    if rubro == "CAÑERIA FLEXIBLE" and "CORRUGADO" in nombre:
+        return "rollo", 25, "m"
+    return None, None, None
 EDITABLES = [c[0] for c in COLUMNAS if c[2]]
 
 
@@ -218,11 +235,16 @@ def main() -> int:
             "URL imagen": w.get("imagen_url"),
             "Destacado (S)": "S" if w.get("destacado") else None,
         }
+        sb, sc, su = bulto_sugerido(p)
+        fila["Vende por (bulto)"] = w.get("venta_bulto") or sb
+        fila["Cant. por bulto"] = w.get("venta_cantidad") or sc
+        fila["Unidad ERP"] = w.get("venta_unidad") or su
         fila.update(previo.get(p["codigo"], {}))   # lo cargado a mano manda
         ws.append([
             p["codigo"], (p["codigo_alt"] or "").strip() or None, p["nombre"], p["rubro"], p["marca"],
             p["stock"], fila["Publicar (S/N)"], fila["Categoría"], fila["Subcategoría"],
-            fila["Nombre web (opcional)"], fila["URL imagen"], fila["Destacado (S)"], fila.get("Notas"),
+            fila["Nombre web (opcional)"], fila["URL imagen"], fila["Destacado (S)"],
+            fila["Vende por (bulto)"], fila["Cant. por bulto"], fila["Unidad ERP"], fila.get("Notas"),
         ])
 
     n = ws.max_row
@@ -231,7 +253,10 @@ def main() -> int:
     sn = DataValidation(type="list", formula1='"S,N"', allow_blank=True)
     s_ = DataValidation(type="list", formula1='"S"', allow_blank=True)
     cats = DataValidation(type="list", formula1=f'"{",".join(CATEGORIAS)}"', allow_blank=True)
-    for dv, col in ((sn, "G"), (cats, "H"), (s_, "L")):
+    # Bulto: lista sugerida pero se acepta otro texto.
+    bultos = DataValidation(type="list", formula1=f'"{",".join(BULTOS)}"', allow_blank=True, showErrorMessage=False)
+    unidades = DataValidation(type="list", formula1='"m,u"', allow_blank=True)
+    for dv, col in ((sn, "G"), (cats, "H"), (s_, "L"), (bultos, "M"), (unidades, "O")):
         ws.add_data_validation(dv)
         dv.add(f"{col}2:{col}{n}")
 
@@ -246,7 +271,8 @@ def main() -> int:
         "5. 'Destacado' = aparece primero en su categoría y en la portada.",
         "6. Las columnas grises vienen del ERP y no se editan acá.",
         "7. Para subir los cambios: python cargar_seleccion_catalogo.py --dry-run (revisar) y luego sin --dry-run.",
-        "8. Para sumar productos nuevos del ERP: python generar_planilla_curaduria.py (conserva lo que ya cargaste).",
+        "8. Bulto: si el ERP vende por metro (o por unidad) pero el producto no se fracciona, completá 'Vende por' (varilla, rollo, caja…), 'Cant. por bulto' (3, 25, 100) y 'Unidad ERP' (m o u). Ej.: caño rígido = varilla, 3, m. La web pide varillas y el pedido llega en metros para el ERP. Vacío = se vende por unidad del ERP.",
+        "9. Para sumar productos nuevos del ERP: python generar_planilla_curaduria.py (conserva lo que ya cargaste).",
         "",
         "Categorías válidas: " + ", ".join(CATEGORIAS),
     ]:
